@@ -1,0 +1,103 @@
+/*!
+ * dsh-client-ui-miku-theme — Hatsune Miku (初音ミク) skin for the DSH Web GUI.
+ *
+ * Colour lives in the token layer (ctx.theme.overrideTokens, projected inline
+ * on <body> by the layout presenter), so this sheet owns only the paint a
+ * token cannot express: the artwork backdrop, the room's light, and the
+ * signature accents.
+ *
+ * Design — the illustration is the room's light:
+ *   light mode  the artwork stays true-colour and sharp. A wide, very soft
+ *               reading scrim lifts only the column that holds text, so the
+ *               periphery keeps the picture crisp instead of washing the
+ *               whole viewport into a flat tint.
+ *   dark mode   no photograph: it overwhelms dark surfaces. Three soft
+ *               brand-coloured glows light the room instead — brand teal high
+ *               left, mint high right, a whisper of the 01-badge pink low
+ *               centre.
+ *
+ * Every veil in this sheet is COLOURLESS on purpose. A tinted veil is what
+ * turned the illustration into a flat leek-green film.
+ *
+ * The single url() placeholder below is replaced at build time by a JPEG data
+ * URI and is declared once as a custom property, so the base64 payload is
+ * embedded exactly one time.
+ */
+
+/* ── artwork backdrop (light mode) ────────────────────────────────────────
+ * Layer order, top to bottom:
+ *   1. reading scrim — a wide, gentle lift under the text column
+ *   2. ambient veil  — a light top/bottom falloff across the whole surface
+ *   3. the artwork
+ * The app frame then paints --dsw-alias-bg-base translucently over this stack.
+ *
+ * Strength knobs: the white alphas here, plus the light --dsw-alias-bg-base
+ * alpha in src/client/bundle.tmpl.js. As shipped the illustration reads at
+ * roughly 50% at the edges and 30% behind the reading column, while secondary
+ * text stays above a 5:1 contrast ratio everywhere.
+ */
+body {
+  --miku-artwork: url("@@MIKU_BACKGROUND@@");
+
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(115% 100% at 54% 44%, rgba(255, 255, 255, 0.30) 0%, rgba(255, 255, 255, 0.10) 45%, rgba(255, 255, 255, 0) 78%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(244, 248, 248, 0.24) 100%),
+    var(--miku-artwork);
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+/* ── stage light (dark mode) ──────────────────────────────────────────────
+ * Lower the dark --dsw-alias-bg-base alpha in src/client/bundle.tmpl.js to let
+ * these glow through more; raise it to flatten them back to a solid fill.
+ */
+body[data-ds-dark-theme] {
+  background-color: #04161a;
+  background-image:
+    radial-gradient(105% 80% at 10% -12%, rgba(57, 197, 187, 0.30) 0%, rgba(57, 197, 187, 0) 58%),
+    radial-gradient(95% 75% at 104% 4%, rgba(127, 240, 230, 0.20) 0%, rgba(127, 240, 230, 0) 62%),
+    radial-gradient(130% 110% at 50% 118%, rgba(228, 0, 43, 0.12) 0%, rgba(228, 0, 43, 0) 58%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* ── signature accents ──────────────────────────────────────────────────── */
+
+/* Teal text selection. */
+::selection {
+  background: rgba(57, 197, 187, 0.35);
+  color: #04222a;
+}
+body[data-ds-dark-theme] ::selection {
+  color: #eafffd;
+}
+
+/* Teal focus ring. */
+:focus-visible {
+  outline-color: rgba(57, 197, 187, 0.85);
+}
+
+/* The Miku signature: teal -> mint -> 01-badge pink, fading out at both ends
+ * so it reads as a light bar rather than a border. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 3px;
+  z-index: 2147483000;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(57, 197, 187, 0) 0%,
+    rgba(57, 197, 187, 0.95) 9%,
+    rgba(127, 240, 230, 0.95) 52%,
+    rgba(228, 0, 43, 0.9) 92%,
+    rgba(228, 0, 43, 0) 100%
+  );
+}
+body[data-ds-dark-theme]::before {
+  opacity: 0.85;
+}

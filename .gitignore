@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Safety copy the installer writes beside a live profile's cordis.patch.yml
+*.miku-backup
+
+# Local build/debug noise
+*.log
+*.tmp
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

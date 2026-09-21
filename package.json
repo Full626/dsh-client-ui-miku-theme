@@ -1,0 +1,56 @@
+{
+  "name": "dsh-client-ui-miku-theme",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hatsune Miku (初音ミク) theme plugin for the DSH Web GUI: an artwork backdrop plus teal/mint --dsw-* alias-token overrides.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "assets",
+    "src",
+    "scripts",
+    "README.md",
+    "CREDITS.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-theme"
+      ],
+      "immediately": true
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test-client.mjs",
+    "install:profile": "node scripts/install.mjs",
+    "check:live": "node scripts/check-live.mjs"
+  },
+  "author": "Full626",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Full626/dsh-client-ui-miku-theme.git"
+  },
+  "homepage": "https://github.com/Full626/dsh-client-ui-miku-theme#readme",
+  "bugs": {
+    "url": "https://github.com/Full626/dsh-client-ui-miku-theme/issues"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "theme",
+    "hatsune-miku",
+    "miku",
+    "初音未来"
+  ]
+}
