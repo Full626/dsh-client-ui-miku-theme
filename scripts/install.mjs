@@ -56,7 +56,12 @@ const MARKER = "dsh-client-ui-miku-theme";
 const BEGIN_PREFIX = `# >>> ${MARKER}`;
 const END_PREFIX = `# <<< ${MARKER}`;
 
-/** Drop a legacy managed block from a profile patch file, markers included. */
+/**
+ * Drop a legacy managed block from a profile patch file, markers included.
+ * A document left holding nothing but comments is restored to the canonical
+ * empty sequence: a comments-only YAML file parses as null, not as an array,
+ * and the loader expects a top-level array.
+ */
 function stripLegacyBlock(text) {
 	const kept = [];
 	let inside = false;
@@ -72,7 +77,12 @@ function stripLegacyBlock(text) {
 		}
 		if (!inside) kept.push(line);
 	}
-	return kept.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd();
+	const rendered = kept.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd();
+	const significant = rendered
+		.split(/\r?\n/)
+		.map((line) => line.trim())
+		.filter((line) => line !== "" && !line.startsWith("#"));
+	return significant.length === 0 ? `${rendered}\n[]` : rendered;
 }
 
 async function main() {
