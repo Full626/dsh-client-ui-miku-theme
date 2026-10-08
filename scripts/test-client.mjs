@@ -196,6 +196,29 @@ async function main() {
 	check("host applies()", typeof host.apply === "function");
 	check("host apply is inert", host.apply() === undefined);
 
+	// --- package manifest: the bundle contract ---------------------------------
+	// A profile installs a plugin by selecting a BUNDLE in dsh.profile.bundles, so
+	// the manifest and the layer it points at are what actually mount the row.
+	console.log("miku-theme: package manifest");
+	const pkg = JSON.parse(await readFile(join(PACKAGE_DIR, "package.json"), "utf8"));
+	check("package name is the module id", pkg.name === pluginId, String(pkg.name));
+	check("declares dsh.bundle.patch", typeof pkg.dsh?.bundle?.patch === "string", String(pkg.dsh?.bundle?.patch));
+	check("declares dsh.client for the web platform", pkg.dsh?.client?.platform === "web", String(pkg.dsh?.client?.platform));
+	const bundlePatch = join(PACKAGE_DIR, pkg.dsh?.bundle?.patch ?? "missing.yml");
+	check("bundle patch file exists", existsSync(bundlePatch));
+	if (existsSync(bundlePatch)) {
+		const patchText = await readFile(bundlePatch, "utf8");
+		check("bundle patch inserts the expected row id", patchText.includes("id: ui-miku-theme"));
+		check("bundle patch mounts this package", patchText.includes(pluginId));
+	}
+	const pluginMeta = join(PACKAGE_DIR, "dsh.plugin.json");
+	check("dsh.plugin.json exists", existsSync(pluginMeta));
+	if (existsSync(pluginMeta)) {
+		const meta = JSON.parse(await readFile(pluginMeta, "utf8"));
+		check("dsh.plugin.json names this package", meta.name === pluginId, String(meta.name));
+		check("dsh.plugin.json entry names this package", meta.entry?.name === pluginId, String(meta.entry?.name));
+	}
+
 	// --- layer 2: real cordis --------------------------------------------------
 	console.log("miku-theme: real cordis integration");
 	const cordisPath = findCordis(cordisArg);

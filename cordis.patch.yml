@@ -1,0 +1,9 @@
+# dsh-client-ui-miku-theme bundle layer: mount the Hatsune Miku theme plugin.
+#
+# A profile composes its tree from the bundles listed in its package.json
+# `dsh.profile.bundles`; this file is the layer this package contributes when
+# it is selected there. Selecting the package is therefore all an install
+# needs -- nothing has to be edited into a profile's own cordis.patch.yml.
+- insert:
+    - id: ui-miku-theme
+      name: 'dsh-client-ui-miku-theme'

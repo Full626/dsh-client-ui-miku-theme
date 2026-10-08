@@ -41,56 +41,63 @@
 
 ## 安装
 
-### 方式一：一键脚本（推荐）
+本包是一个 **DSH 组合包（bundle）**：自带 `cordis.patch.yml`。profile 只要把包名选进
+`dsh.profile.bundles`，加载器就会应用那一层 patch 来挂载插件行——所以「安装」= 让 profile
+能解析到这个包 + 把它选进 bundles，**不需要手改任何 patch 文件**。
 
-```powershell
-# 在插件目录下执行；$env:DSH_HOME 未设置时必须显式传入
-.\install.ps1 -DshHome 'D:\AgentData\dsh_data'
-```
+旧版本（本仓库早期提交）是往 profile 的 `cordis.patch.yml` 里直接插加载行的；新版脚本会
+识别并清掉那个遗留块，因此重装不会出现「挂载两次」的冲突。
 
-脚本会：
+### 方式一：应用内的「插件」页（推荐）
 
-0. 首次改写 `cordis.patch.yml` 前，先把原始内容备份到 `cordis.patch.yml.miku-backup`；
-1. 把插件包复制到 `$DSH_HOME/profiles/web/node_modules/dsh-client-ui-miku-theme`；
-2. 在 `$DSH_HOME/profiles/web/cordis.patch.yml` 里插入（幂等、带注释标记的）加载行：
+DSH 桌面端和 Web 端的 **侧边栏 → 插件**页就是 profile 的组合包管理器：
 
-   ```yaml
-   - insert:
-       - id: ui-miku-theme
-         name: dsh-client-ui-miku-theme
+1. 点安装，填入 GitHub 地址：
+
+   ```
+   https://github.com/Full626/dsh-client-ui-miku-theme
    ```
 
-3. `patchReload: live` 的 profile 会**热加载**这份 patch，通常无需重启 `dsh web`。
+2. 它会先用 `git ls-remote` 检查仓库，再用 profile 自带的 pnpm 拉取，并把包名选进
+   `dsh.profile.bundles`；
+3. **重启应用**——profile 没开 `patchReload: live` 时，新的组合层要下次启动才生效。
 
-其他参数：`-Profile <名字>`（默认 `web`）、`-DryRun`（只打印将要做的改动）、
-`-Uninstall`（移除加载行与插件目录）。
-
-### 方式二：手工安装
+### 方式二：命令行
 
 ```powershell
-$pkg = 'dsh-client-ui-miku-theme'
-$dst = Join-Path $env:DSH_HOME "profiles\web\node_modules\$pkg"
-New-Item -ItemType Directory -Force $dst | Out-Null
-Copy-Item package.json, lib, assets, README.md $dst -Recurse -Force
+dsh plugin --profile desktop add 'github:Full626/dsh-client-ui-miku-theme'
 ```
 
-然后在 `$DSH_HOME/profiles/web/cordis.patch.yml`（顶层 YAML 数组）里追加：
+`--profile` 换成分支名即可（桌面端是 `desktop`，CLI 的 Web 端一般是 `web`）。装完重启。
 
-```yaml
-- insert:
-    - id: ui-miku-theme
-      name: dsh-client-ui-miku-theme
+### 方式三：离线一键脚本（手工兜底，不需要联网）
+
+```powershell
+cd dsh-client-ui-miku-theme
+.\install.ps1                          # 默认取 $env:DSH_PROFILE，没设则用 web
+.\install.ps1 -Profile desktop         # 明确指定桌面端 profile
+.\install.ps1 -Profile desktop -DryRun # 只打印将要做的改动
 ```
 
-刷新浏览器页面即可。
+脚本是**幂等**的，只做两件事：
+
+1. 把包复制到 `<profile>/node_modules/dsh-client-ui-miku-theme`；
+2. 把包名追加到 `<profile>/package.json` 的 `dsh.profile.bundles`。
+   首次改动 profile 清单前，原文件会备份成 `package.json.miku-backup`。
+
+> ⚠️ 这是**手工兜底**：依赖关系没有进锁文件，pnpm 下次安装时可能把这个目录当作
+> 「多余包」清理掉。能联网时优先用方式一 / 方式二。
 
 ### 卸载
 
+三种安装方式各有对应做法：
+
 ```powershell
-.\install.ps1 -DshHome 'D:\AgentData\dsh_data' -Uninstall
+dsh plugin --profile desktop remove dsh-client-ui-miku-theme   # 方式一 / 二装的就用这个
+.\install.ps1 -Profile desktop -Uninstall                      # 方式三装的
 ```
 
-删掉那一行 patch + 插件目录后，刷新页面即可恢复默认外观。
+插件页里直接移除该组合包也可以。**重启应用**后即恢复默认外观。
 
 ## 验证
 
@@ -98,8 +105,8 @@ Copy-Item package.json, lib, assets, README.md $dst -Recurse -Force
 
 ```powershell
 node scripts/build.mjs          # 构建产物（校验占位符与图片）
-node scripts/test-client.mjs    # 29 项契约冒烟测试（含真实 cordis Context 挂载）
-node scripts/check-live.mjs     # 直连运行中的 dsh web，确认插件已发布并可下载
+node scripts/test-client.mjs    # 38 项契约冒烟测试（含真实 cordis Context 挂载）
+node scripts/check-live.mjs     # 直连运行中的应用，确认插件已发布并可下载
 ```
 
 `check-live.mjs` 走的是 `GET /plugins/events`（client-hmr 的 SSE 事件通道，
@@ -112,7 +119,8 @@ miku-theme: published — {"id":"dsh-client-ui-miku-theme","url":"/plugins/??…
 miku-theme: served bundle 200 text/javascript; charset=utf-8 385.4 KiB
 ```
 
-如果输出 `NOT published`，说明热重载没有接上，重启 `dsh web` 即可。
+如果输出 `NOT published`，说明组合层还没生效——重启应用即可。
+`--url` 可指向任意一个在跑的 DSH 界面（桌面端默认端口不固定，看 `$env:DSH_WEB_URL`）。
 
 ## 自定义
 
@@ -140,8 +148,10 @@ node scripts/test-client.mjs   # 无浏览器冒烟测试
 
 ```
 dsh-client-ui-miku-theme/
-├─ package.json              # dsh.client 声明（platform: web，inject ui-theme）
-├─ install.ps1               # 安装/卸载入口
+├─ package.json              # dsh.bundle.patch + dsh.client 声明
+├─ cordis.patch.yml          # 组合包层：把 ui-miku-theme 这一行插进 profile
+├─ dsh.plugin.json           # 插件元信息（名称/版本/入口/client 平台）
+├─ install.ps1               # 离线安装/卸载入口
 ├─ LICENSE                   # MIT（仅覆盖代码）
 ├─ CREDITS.md                # 插画致谢、版权与移除策略
 ├─ .gitignore
@@ -178,11 +188,15 @@ snapshot，再被内联写回），而背景图这类 token 表达不了的部�
 `ctx.inject(['theme'], …)`：这样即使某个组合没有装载 `ui-theme`，
 背景图依然生效，只是少了配色覆盖。
 
+打包上，本包声明 `dsh.bundle.patch` 指到自带的 `cordis.patch.yml`，因此它是一个
+**组合包**：profile 只要在 `dsh.profile.bundles` 里选中它，加载器就会自己应用那一层
+patch。这也正是桌面端「插件」页能直接按 GitHub 地址安装它的原因。
+
 ## 已知限制
 
 - **插画版权归原作者 @fieed**，本仓库未获书面授权，仅作粉丝向非官方演示与个人使用；
   权利人要求即移除。替换成自己的图很容易，见 [自定义](#自定义)。
-- 插件是「常开」的：没有独立的设置开关，卸载或注释掉 patch 行即可关闭。
+- 插件是「常开」的：没有独立的设置开关，在插件页里移除该组合包即可关闭。
 - 背景图以 data URI 内联，`lib/client.js` 约 400 KiB；宿主会 gzip 后提供。
 - 需要组合中包含 `@deepseek-ai/dsh-host-webserver`（Web 界面）与
   `@deepseek-ai/dsh-client-ui-theme`（配色覆盖）。

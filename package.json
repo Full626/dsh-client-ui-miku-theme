@@ -8,6 +8,7 @@
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
   "files": [
@@ -15,11 +16,16 @@
     "assets",
     "src",
     "scripts",
+    "cordis.patch.yml",
+    "dsh.plugin.json",
     "README.md",
     "CREDITS.md",
     "LICENSE"
   ],
   "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
       "inject": [
@@ -27,6 +33,9 @@
       ],
       "immediately": true
     }
+  },
+  "engines": {
+    "node": ">=22"
   },
   "scripts": {
     "build": "node scripts/build.mjs",
@@ -46,6 +55,7 @@
   },
   "keywords": [
     "dsh",
+    "dsh-plugin",
     "deepseek-harness",
     "plugin",
     "theme",

@@ -1,0 +1,12 @@
+{
+  "name": "dsh-client-ui-miku-theme",
+  "description": "Hatsune Miku theme for the DSH Web GUI: an illustrated backdrop plus teal/mint --dsw-* token overrides.",
+  "version": "1.0.0",
+  "entry": {
+    "name": "dsh-client-ui-miku-theme",
+    "inject": []
+  },
+  "client": {
+    "platform": "web"
+  }
+}
