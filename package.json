@@ -41,7 +41,8 @@
     "build": "node scripts/build.mjs",
     "test": "node scripts/test-client.mjs",
     "install:profile": "node scripts/install.mjs",
-    "check:live": "node scripts/check-live.mjs"
+    "check:live": "node scripts/check-live.mjs",
+    "pack": "pnpm pack"
   },
   "author": "Full626",
   "license": "MIT",

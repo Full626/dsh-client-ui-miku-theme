@@ -45,38 +45,72 @@
 `dsh.profile.bundles`，加载器就会应用那一层 patch 来挂载插件行——所以「安装」= 让 profile
 能解析到这个包 + 把它选进 bundles，**不需要手改任何 patch 文件**。
 
-旧版本（本仓库早期提交）是往 profile 的 `cordis.patch.yml` 里直接插加载行的；新版脚本会
-识别并清掉那个遗留块，因此重装不会出现「挂载两次」的冲突。
+先按「对方是谁」挑一条路。五条路装的是同一个东西，效果完全一样：
 
-### 方式一：应用内的「插件」页（推荐）
+| 类别 | 适合谁 | 怎么做 | 要联网 | 要 Git |
+| --- | --- | --- | --- | --- |
+| **A** 桌面端用户 | 装了 DSH 桌面 App | 侧边栏 →「插件」→ 填 GitHub 地址 | ✅ | ✅ |
+| **B** Web 端用户 | `dsh web` / 浏览器访问 | 同 A；或命令行 `dsh plugin … add` | ✅ | ✅ |
+| **C** 内网 / 连不上 GitHub | 离线机器、网络不稳 | 发 `.tgz` 或整个文件夹 → 插件页填**绝对路径** | ❌ | ❌ |
+| **D** 要自动化 / 没有插件页 | CI、批量部署、旧版本 | `install.ps1` | ❌ | ❌ |
+| **E** 想改的人 | 换图 / 改配色 / 二开 | clone → 改 → build → 装 | 首次 | ✅ |
 
-DSH 桌面端和 Web 端的 **侧边栏 → 插件**页就是 profile 的组合包管理器：
+> **三个共同前提**
+>
+> 1. 对方的 DSH 里要有 **Web 界面**（桌面 App，或 `dsh web`）。纯 TUI / headless 组合没有
+>    Web 客户端，装了不会显示——但**无害**，不会弄坏对方的环境。
+> 2. 命令里的 `--profile` 必须是**对方实际在用的 profile**：桌面端默认 `desktop`，CLI 的
+>    Web 端一般 `web`。不确定就看 `$env:DSH_PROFILE`，或 `$env:DSH_HOME/profiles/` 下的目录名。
+> 3. A / B 需要系统 PATH 里有 **`git`**（插件页会先用 `git ls-remote` 探一次仓库）；
+>    C / D 不需要。
+>
+> 旧版本（本仓库早期提交）是往 profile 的 `cordis.patch.yml` 里直接插加载行的；新版脚本会
+> 识别并清掉那个遗留块，因此重装不会出现「挂载两次」的冲突。
 
-1. 点安装，填入 GitHub 地址：
+### A. 桌面端用户
 
-   ```
-   https://github.com/Full626/dsh-client-ui-miku-theme
-   ```
+**侧边栏 →「插件」→ 安装**，填：
 
-2. 它会先用 `git ls-remote` 检查仓库，再用 profile 自带的 pnpm 拉取，并把包名选进
-   `dsh.profile.bundles`；
-3. **重启应用**——profile 没开 `patchReload: live` 时，新的组合层要下次启动才生效。
-
-### 方式二：命令行
-
-```powershell
-dsh plugin --profile desktop add 'github:Full626/dsh-client-ui-miku-theme'
+```
+https://github.com/Full626/dsh-client-ui-miku-theme
 ```
 
-`--profile` 换成分支名即可（桌面端是 `desktop`，CLI 的 Web 端一般是 `web`）。装完重启。
+它会探仓库 → 用 profile 自带的 pnpm 拉取 → 自动把包名选进 `dsh.profile.bundles`。
+装完**刷新窗口**即可；万一没生效就重启应用。
 
-### 方式三：离线一键脚本（手工兜底，不需要联网）
+### B. Web 端用户
+
+浏览器里的「插件」页和桌面端是同一个，步骤与 A 完全一致。习惯命令行的用：
+
+```powershell
+dsh plugin --profile web add 'github:Full626/dsh-client-ui-miku-theme'
+```
+
+### C. 内网 / 连不上 GitHub（离线分发）
+
+把 `dsh-client-ui-miku-theme-1.0.0.tgz`（`pnpm pack` 产物，已含构建好的 `lib/` 和插画，
+约 600 KiB）发给对方，对方在**插件页 → 安装**里填它的**绝对路径**：
+
+```
+D:\Downloads\dsh-client-ui-miku-theme-1.0.0.tgz
+```
+
+填整个**文件夹**的绝对路径也可以：
+
+```
+D:\Downloads\dsh-client-ui-miku-theme
+```
+
+这条路不需要 git、不需要网络，而且依赖会正常进锁文件——比 D 更干净。自己重新打包：
+`pnpm pack`（或 `npm pack`）。
+
+### D. 要自动化 / 没有插件页
 
 ```powershell
 cd dsh-client-ui-miku-theme
 .\install.ps1                          # 默认取 $env:DSH_PROFILE，没设则用 web
-.\install.ps1 -Profile desktop         # 明确指定桌面端 profile
-.\install.ps1 -Profile desktop -DryRun # 只打印将要做的改动
+.\install.ps1 -Profile desktop         # 明确指定 profile
+.\install.ps1 -Profile desktop -DryRun # 只预览将要做的改动
 ```
 
 脚本是**幂等**的，只做两件事：
@@ -85,19 +119,42 @@ cd dsh-client-ui-miku-theme
 2. 把包名追加到 `<profile>/package.json` 的 `dsh.profile.bundles`。
    首次改动 profile 清单前，原文件会备份成 `package.json.miku-backup`。
 
-> ⚠️ 这是**手工兜底**：依赖关系没有进锁文件，pnpm 下次安装时可能把这个目录当作
-> 「多余包」清理掉。能联网时优先用方式一 / 方式二。
+需要系统里有 **Node**。⚠️ 这是**手工兜底**：依赖没进锁文件，pnpm 下次跑安装时可能把这个
+目录当「多余包」清掉——能用插件页就走 A / B / C。
 
-### 卸载
-
-三种安装方式各有对应做法：
+### E. 想改配色 / 换图 / 二开
 
 ```powershell
-dsh plugin --profile desktop remove dsh-client-ui-miku-theme   # 方式一 / 二装的就用这个
-.\install.ps1 -Profile desktop -Uninstall                      # 方式三装的
+git clone https://github.com/Full626/dsh-client-ui-miku-theme
+cd dsh-client-ui-miku-theme
+# 换图：替换 assets/miku-background.jpg
+# 换配色：改 src/client/bundle.tmpl.js 里的 MIKU_TOKENS
+# 调背景层次：改 src/client/theme.css   （详见下面的「自定义」）
+node scripts/build.mjs         # 重新生成 lib/
+node scripts/test-client.mjs   # 38 项契约测试，全绿再装
+pnpm pack                      # （可选）打成可分享的 tgz
 ```
 
-插件页里直接移除该组合包也可以。**重启应用**后即恢复默认外观。
+`src/` 是源码、`lib/` 是构建产物——**改完一定要 build**，加载器只认 `lib/`。
+
+### 装完怎么确认 / 怎么卸载
+
+确认（端口看 `$env:DSH_WEB_URL`）：
+
+```powershell
+node scripts/check-live.mjs --url http://127.0.0.1:19387
+```
+
+出现 `published` 加 `served bundle 200` 就是装好了。
+
+| 装法 | 卸载 |
+| --- | --- |
+| A / B | 插件页里移除该组合包，或 `dsh plugin --profile <名字> remove dsh-client-ui-miku-theme` |
+| C | 同上（它已是正式的 pnpm 依赖） |
+| D | `.\install.ps1 -Profile <名字> -Uninstall` |
+| E | 同 D，然后按需重新 build |
+
+除 E 外都不用重新构建。**卸载后刷新 / 重启**即恢复默认外观。
 
 ## 验证
 

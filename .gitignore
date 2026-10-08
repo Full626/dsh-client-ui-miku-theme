@@ -8,6 +8,10 @@ node_modules/
 *.log
 *.tmp
 
+# pnpm pack output: a shareable artifact for offline installs (see README,
+# category C), not repository content
+*.tgz
+
 # OS and editor files
 .DS_Store
 Thumbs.db
