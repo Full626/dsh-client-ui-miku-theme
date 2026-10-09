@@ -266,4 +266,4 @@ patch。这也正是桌面端「插件」页能直接按 GitHub 地址安装它�
 - **插画 `assets/miku-background.jpg`**：**不在 MIT 覆盖范围内**，版权归原作者
   **@fieed**，本仓库未获书面授权。见 [CREDITS.md](CREDITS.md)。
 - **角色**：「初音ミク / Hatsune Miku」是 Crypton Future Media, INC. 的注册商标与角色，
-  本项目与 Crypton 无任何关联。
+  本项目与 Crypton 无任何关联。有时可联系本人哦！
